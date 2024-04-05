@@ -1,4 +1,6 @@
 #include <Arduino.h>
+#include <SPIFFS.h>
+// #include <FFat.h>
 #include <esp_err.h>
 #include <esp_lcd_panel_io.h>
 #include <esp_lcd_panel_vendor.h>
@@ -40,11 +42,27 @@ void set_angle(void * obj, int32_t v)
 
 void setup() {
   Serial.begin(115200);
+  // while(Serial);
+
+  // if(!FFat.begin()) {
+  //   Serial.println(F("Error: failed to mount FFat"));
+  //   while(true) {
+  //     delay(10);
+  //   }
+  // }
+
+  if(!SPIFFS.begin()) {
+    Serial.println(F("Error: failed to mount SPIFFS"));
+    while(true) {
+      delay(10);
+    }
+  }
 
   pinMode(LCD_BL, OUTPUT);
   analogWrite(LCD_BL, 255);
 
   lv_init();
+
   lv_display_t *disp;
   disp = lv_display_create(LCD_H_RES, LCD_V_RES);
 
@@ -87,16 +105,21 @@ void setup() {
   ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel_handle, true, false));
   ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true));
 
-  // void *buf_1 = heap_caps_malloc(DISP_BUF_SIZE, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
-  // void *buf_2 = heap_caps_malloc(DISP_BUF_SIZE, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
-  void *buf_1 = ps_malloc(DISP_BUF_SIZE);
-  void *buf_2 = ps_malloc(DISP_BUF_SIZE);
+  void *buf_1 = heap_caps_malloc(DISP_BUF_SIZE, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
+  void *buf_2 = heap_caps_malloc(DISP_BUF_SIZE, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
+  // void *buf_1 = ps_malloc(DISP_BUF_SIZE);
+  // void *buf_2 = ps_malloc(DISP_BUF_SIZE);
 
   lv_display_set_flush_cb(disp, disp_flush);
   lv_display_set_user_data(disp, panel_handle);
   lv_display_set_buffers(disp, buf_1, buf_2, DISP_BUF_SIZE, LV_DISPLAY_RENDER_MODE_PARTIAL);
 
+  lv_obj_t * img1 = lv_image_create(lv_screen_active());
+  lv_image_set_src(img1, "S:/wallpaper.png");
+  lv_obj_align(img1, LV_ALIGN_CENTER, 0, 0);
+
   lv_obj_t * arc = lv_arc_create(lv_screen_active());
+  lv_obj_set_size(arc, 240, 240);
   lv_arc_set_rotation(arc, 270);
   lv_arc_set_bg_angles(arc, 0, 360);
   lv_obj_remove_style(arc, NULL, LV_PART_KNOB);
